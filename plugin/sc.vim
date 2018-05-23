@@ -330,20 +330,10 @@ call SC_Init()
 function! SC_Complete()
 pythonx << endpython
 sc.setup_vars()
-endpython
-
-    if pumvisible()
-pythonx << endpython
 sc.complete(True)
 endpython
-    else
-pythonx << endpython
-# sc.complete(False)
-sc.complete(True)
-endpython
-    endif
 
-    return ''
+return ''
 endfunction
 
 function! SC_OnCursorMovedI()
@@ -373,19 +363,20 @@ endpython
 endfunction
 
 function! SC_CompleteFunc(findstart, base)
+  
+    let g:sc__findstart = a:findstart
     
+pythonx << endpython
+if int(vim_getvar('g:sc__findstart')) == 1:
+    sc.cf_findstart()
+else:
+    sc.cf_getmatches()
+endpython
+
     if a:findstart
-pythonx << endpython
-sc.cf_findstart()
-endpython
         return g:sc__retval
-        
     else
-pythonx << endpython
-sc.cf_getmatches()
-endpython
         return {'words': g:sc__retval, 'refresh': 'always'}
-        
     endif
     
 endfunction
