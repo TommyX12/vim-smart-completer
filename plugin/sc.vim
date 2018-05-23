@@ -1,5 +1,3 @@
-" check python3 requirement
-
 if exists("g:sc_loaded")
     finish
 endif
@@ -23,7 +21,7 @@ function! SC_Init()
     call SetDefault("g:sc_preferred_result_length", 8)
     call SetDefault("g:sc_cursor_word_filter", 0)
     
-python3 << endpython
+pythonx << endpython
 import vim
 import re
 
@@ -330,16 +328,16 @@ endfunction
 call SC_Init()
 
 function! SC_Complete()
-python3 << endpython
+pythonx << endpython
 sc.setup_vars()
 endpython
 
     if pumvisible()
-python3 << endpython
+pythonx << endpython
 sc.complete(True)
 endpython
     else
-python3 << endpython
+pythonx << endpython
 # sc.complete(False)
 sc.complete(True)
 endpython
@@ -350,7 +348,7 @@ endfunction
 
 function! SC_OnCursorMovedI()
 
-python3 << endpython
+pythonx << endpython
 sc.setup_vars()
 
 if sc.triggered():
@@ -366,7 +364,7 @@ endfunction
 
 function! SC_OnInsertLeave()
 
-python3 << endpython
+pythonx << endpython
 sc.setup_vars()
 
 # sc.restore_ycm()
@@ -377,13 +375,13 @@ endfunction
 function! SC_CompleteFunc(findstart, base)
     
     if a:findstart
-python3 << endpython
+pythonx << endpython
 sc.cf_findstart()
 endpython
         return g:sc__retval
         
     else
-python3 << endpython
+pythonx << endpython
 sc.cf_getmatches()
 endpython
         return {'words': g:sc__retval, 'refresh': 'always'}
