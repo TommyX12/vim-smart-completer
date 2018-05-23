@@ -1,5 +1,6 @@
 if !has('pythonx')
     echom "vim-smart-completer requires pythonx support"
+    inoremap <silent> <Plug>(SC) <C-x><C-p>
     finish
 endif
 
