@@ -1,3 +1,8 @@
+if !has('pythonx')
+    echom "vim-smart-completer requires pythonx support"
+    finish
+endif
+
 if exists("g:sc_loaded")
     finish
 endif
