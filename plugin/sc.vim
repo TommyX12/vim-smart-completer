@@ -127,7 +127,7 @@ endfunction
 augroup sc_dt_trigger_group
     autocmd!
     autocmd TextChangedI * call s:dt_on_textchangedi()
-    autocmd InsertCharPre * call s:dt_on_insertcharpre()
+    " autocmd InsertCharPre * call s:dt_on_insertcharpre()
 augroup END
 
 
