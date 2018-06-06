@@ -1,6 +1,5 @@
 import vim
 
-from util import *
 from secondary_completer import *
 
 class YCMCompleter(SecondaryCompleter):
@@ -15,9 +14,6 @@ class YCMCompleter(SecondaryCompleter):
         """
         Triggers the completer to start completion.
         """
-        # make sure we do not fire our event
-        vim.command('let g:sc_dt_event_block = 1')
-        
         # manually dispatch TextChangedI event for YCM to use.
         vim.command('do TextChangedI')
         

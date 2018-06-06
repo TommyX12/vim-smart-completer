@@ -2,8 +2,9 @@ import vim
 import re
 
 from util import *
-from secondary_completer import *
+from secondary_completers.secondary_completer import *
 from secondary_completers.ycm import *
+from completion_results import *
 
 class SmartCompleter:
     def __init__(self, secondary):
@@ -12,6 +13,7 @@ class SmartCompleter:
         self.next = []
         
         self.secondary = secondary
+        self.results = CompletionResults()
     
     def setup_vars(self):
         self.auto_trigger            = int(vim_getvar('g:sc_auto_trigger'))
@@ -20,9 +22,11 @@ class SmartCompleter:
         self.max_lines               = int(vim_getvar('g:sc_max_lines'))
         self.max_results             = int(vim_getvar('g:sc_max_results'))
         self.max_result_length       = int(vim_getvar('g:sc_max_result_length'))
-        self.max_downward_search     = int(vim_getvar('g:sc_max_downward_search'))
+        #  self.max_downward_search     = int(vim_getvar('g:sc_max_downward_search'))
         self.preferred_result_length = int(vim_getvar('g:sc_preferred_result_length'))
         self.cursor_word_filter      = int(vim_getvar('g:sc_cursor_word_filter'))
+        
+        self.results.set_max_entries(self.max_results)
     
     def polish_result(self, string):
         strlen = len(string)
@@ -54,7 +58,24 @@ class SmartCompleter:
             else:
                 i = self.next[i]
     
-    def get_matches(self):
+    def get_cursor_word_len(self):
+        buf = vim.current.buffer
+        line = buf[vim_cursorline()][:vim_cursorcol()]
+        i = len(line) - 1
+        result = 0
+        while i >= 0 and is_word_char(line[i]):
+            result += 1
+            i -= 1
+        
+        return result
+    
+    def get_cursor_word(self):
+        buf = vim.current.buffer
+        return safe_substr(buf[vim_cursorline()], vim_cursorcol() - self.get_cursor_word_len(), vim_cursorcol())
+    
+    def cache_results(self):
+        self.results.clear()
+        
         if len(self.next) != self.pattern_length + 1:
             self.next = [0 for i in range(self.pattern_length + 1)]
             
@@ -73,11 +94,10 @@ class SmartCompleter:
         
         pat_cursor_word_len = 0
         if self.cursor_word_filter == 1:
-            while pat_cursor_word_len < patlen and is_word_char(patstr[pat_cursor_word_len]):
-                pat_cursor_word_len += 1
+            pat_cursor_word_len = self.get_cursor_word_len()
         
-        res = []
-        resn = []
+        #  res = []
+        #  resn = []
         
         linecnt = 0
         l = 1
@@ -142,6 +162,12 @@ class SmartCompleter:
                             elif j == pat_cursor_word_len and i >= 0 and is_word_char(linestr[i]):
                                 break
                             
+                            optstart = j + i + 1
+                            opt = safe_substr(linestr, optstart, optstart + self.max_result_length)
+                            
+                            self.results.add(opt, priority)
+                            
+                            """ legacy: cheesy insertion sort
                             # find insert position
                             ins = len(resn) - 1
                             while ins >= 0 and priority > resn[ins]:
@@ -153,6 +179,7 @@ class SmartCompleter:
                             # find option string
                             optstart = j + i + 1
                             opt = safe_substr(linestr, optstart, optstart + self.max_result_length)
+                            if
                             
                             if len(opt) <= 0: break
                             
@@ -166,50 +193,53 @@ class SmartCompleter:
                             if len(resn) > self.max_results:
                                 resn.pop()
                                 res.pop()
+                            """
                             
                             break
                         
                         j = self.next[j]
                         matched = j
         
-        for i in range(len(res)):
-            res[i] = self.polish_result(res[i])
-        
-        return res
+        return not self.results.is_empty()
     
     def cf_findstart(self):
-        vim_setvar('g:sc__retval', str(vim_cursorcol() + 1))
+        vim_setvar('g:sc__retval', str(vim_cursorcol() - self.get_cursor_word_len()))
 
     def cf_getmatches(self):
-        vim_setvar('g:sc__retval', strings_to_vimstr(self.get_matches()))
+        res = self.results.get_strings()
+        
+        base = vim_getvar('g:sc__base')
+        
+        for i in range(len(res)):
+            res[i] = base + self.polish_result(res[i])
+        
+        vim_setvar('g:sc__retval', strings_to_vimstr(res))
     
     def reset_complete_func(self):
         vim_setopt('completefunc', self.completefunc_old)
 
-    def trigger(self, auto_select):
-        # <-
+    def trigger(self, auto_select, use_secondary = False):
+        if use_secondary or not self.cache_results():
+            self.secondary.enable()
+            self.secondary.trigger()
+            return
+            
         completeopt_old = vim_getopt('completeopt')
         completeopt = 'menuone'
         
-        vim_setopt('completeopt', completeopt)
-        
-        # <-
         self.completefunc_old = vim_getopt('completefunc')
         completefunc = 'SC_CompleteFunc'
+        
+        vim_setopt('completeopt', completeopt)
         vim_setopt('completefunc', completefunc)
         
-        # <-
         if auto_select:
             vim.command('call feedkeys("\\<C-X>\\<C-U>", "in")')
         
         else:
             vim.command('call feedkeys("\\<C-X>\\<C-U>\\<C-P>", "in")')
-        # ->
-            
-        # ->
         
         vim_setopt('completeopt', completeopt_old)
-        # ->
     
     def triggered(self):
         if not self.auto_trigger:
@@ -229,7 +259,10 @@ class SmartCompleter:
                 return True
         
         return False
-
+    
+    def on_insertcharpre(self):
+        self.secondary.disable()
+    
     #  def disable_ycm(self):
         #  if self.ycm_auto_trigger_old != None:
             #  return

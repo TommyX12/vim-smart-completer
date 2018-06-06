@@ -70,25 +70,32 @@ function! s:init()
     call s:set_default("g:sc_auto_trigger", 1)
     call s:set_default("g:sc_auto_trigger_space_only", 1)
     call s:set_default("g:sc_pattern_length", 25)
-    call s:set_default("g:sc_max_lines", 1000)
-    call s:set_default("g:sc_max_results", 10)
+    call s:set_default("g:sc_max_lines", 500)
+    call s:set_default("g:sc_max_results", 20)
     call s:set_default("g:sc_max_result_length", 50)
-    call s:set_default("g:sc_max_downward_search", 10)
+    " call s:set_default("g:sc_max_downward_search", 10)
     call s:set_default("g:sc_preferred_result_length", 8)
-    call s:set_default("g:sc_cursor_word_filter", 0)
+    call s:set_default("g:sc_cursor_word_filter", 1)
     
 exe s:pyeof
 
+from __future__ import absolute_import # make sure to import from top level
 from __future__ import print_function # print as function
 from __future__ import division # auto float division
 from __future__ import unicode_literals
 
+import os
+import vim
+
 script_path = vim.eval('s:script_path')
-sys.path.insert(0, script_path) # this allows local import
+sys.path.insert(0, os.path.join(script_path, 'sc')) # this allows local import
+print(script_path)
 
 endpython
     
-    call s:run_python_file('smart_completer.py')
+    call s:run_python_file('sc/smart_completer.py')
+    
+    exe s:py . 'smart_completer.setup_vars()'
     
 endfunction
 
@@ -96,7 +103,7 @@ endfunction
 
 " delayed trigger
 let s:dt_t_id = -1
-let s:dt_event_block = 0
+
 let s:dt_trigger_delay = 200
 function! SC_dt_trigger(id)
     let s:dt_t_id = -1
@@ -105,12 +112,8 @@ function! SC_dt_trigger(id)
     endif
     return ''
 endfunction
-function! s:dt_on_textchangedi()
-    if s:dt_event_block == 1
-        let s:dt_event_block = 0
-        return
-    endif
-    
+function! s:dt_on_insertcharpre()
+    exe s:py . 'smart_completer.on_insertcharpre()'
     if s:dt_t_id != -1
         call timer_stop(s:dt_t_id)
     endif
@@ -118,23 +121,31 @@ function! s:dt_on_textchangedi()
         let s:dt_t_id = timer_start(s:dt_trigger_delay, 'SC_dt_trigger')
     endif
 endfunction
-function! s:dt_on_insertcharpre()
-    " automatically close pop-up menu before inserting text
-    if pumvisible()
-        call feedkeys("\<C-E>", "in")
-    endif
-endfunction
+" function! s:dt_on_insertcharpre()
+    " " automatically close pop-up menu before inserting text
+    " if pumvisible()
+        " call feedkeys("\<C-E>", "in")
+    " endif
+" endfunction
 augroup sc_dt_trigger_group
     autocmd!
-    autocmd TextChangedI * call s:dt_on_textchangedi()
-    " autocmd InsertCharPre * call s:dt_on_insertcharpre()
+    autocmd InsertCharPre * call s:dt_on_insertcharpre()
 augroup END
 
 
 function! SC_Trigger()
 exe s:pyeof
-smart_completer.setup_vars()
+# smart_completer.setup_vars()
 smart_completer.trigger(True)
+endpython
+
+return ''
+endfunction
+
+function! SC_Trigger_Secondary()
+exe s:pyeof
+# smart_completer.setup_vars()
+smart_completer.trigger(True, True)
 endpython
 
 return ''
@@ -142,7 +153,7 @@ endfunction
 
 function! SC_Trigger_Auto()
 exe s:pyeof
-smart_completer.setup_vars()
+# smart_completer.setup_vars()
 smart_completer.trigger(False)
 endpython
 
@@ -152,7 +163,7 @@ endfunction
 function! SC_OnCursorMovedI()
 
 exe s:pyeof
-smart_completer.setup_vars()
+# smart_completer.setup_vars()
 
 if smart_completer.triggered():
     # smart_completer.disable_ycm()
@@ -168,7 +179,7 @@ endfunction
 function! SC_OnInsertLeave()
 
 exe s:pyeof
-smart_completer.setup_vars()
+# smart_completer.setup_vars()
 
 # smart_completer.restore_ycm()
 endpython
@@ -178,6 +189,7 @@ endfunction
 function! SC_CompleteFunc(findstart, base)
   
     let g:sc__findstart = a:findstart
+    let g:sc__base = a:base
     
 exe s:pyeof
 
@@ -203,11 +215,15 @@ endfunction
 call s:init()
 
 " auto commands
-autocmd CursorMovedI * call SC_OnCursorMovedI()
-autocmd InsertLeave * call SC_OnInsertLeave()
+
+augroup sc_group
+  autocmd CursorMovedI * call SC_OnCursorMovedI()
+  autocmd InsertLeave * call SC_OnInsertLeave()
+augroup end
 
 " key binding
 inoremap <silent> <Plug>(SC) <C-r>=SC_Trigger()<cr>
+inoremap <silent> <Plug>(SC_Secondary) <C-r>=SC_Trigger_Secondary()<cr>
 
 
 

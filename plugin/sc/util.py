@@ -40,7 +40,7 @@ def vim_cursorcol():
     return int(vim.eval('col(".")')) - 1
 
 def is_word_char(char):
-    return char.isalpha() or char.isdigit()
+    return char.isalpha() or char.isdigit() or char == '_'
 
 def shrink_spaces(string):
     return re.sub(r' +', r' ', string)

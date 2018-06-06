@@ -1,7 +1,5 @@
 import vim
 
-from util import *
-
 class SecondaryCompleter(object):
     """
     Interface for a secondary completer.
