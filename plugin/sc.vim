@@ -72,7 +72,6 @@ function! s:init()
     call s:set_default("g:sc_max_lines", 1000)
     call s:set_default("g:sc_max_results", 12)
     call s:set_default("g:sc_max_result_length", 50)
-    " call s:set_default("g:sc_max_downward_search", 10)
     call s:set_default("g:sc_preferred_result_length", 8)
     call s:set_default("g:sc_cursor_word_filter", 1)
     
@@ -92,9 +91,10 @@ sys.path.insert(0, os.path.join(script_path, 'sc')) # this allows local import
 
 endpython
     
-    call s:run_python_file('sc/smart_completer.py')
+    call s:run_python_file('sc/vim_smart_completer_controller.py')
     
-    exe s:py . 'smart_completer.setup_vars()'
+    exe s:py . 'scc = VimSmartCompleterController()'
+    exe s:py . 'scc.setup_vars()'
     
 endfunction
 
@@ -112,7 +112,7 @@ function! SC_dt_trigger(id)
     return ''
 endfunction
 function! s:dt_on_insertcharpre()
-    exe s:py . 'smart_completer.on_insertcharpre()'
+    exe s:py . 'scc.on_insertcharpre()'
     if s:dt_t_id != -1
         call timer_stop(s:dt_t_id)
     endif
@@ -134,8 +134,8 @@ augroup END
 
 function! SC_Trigger()
 exe s:pyeof
-# smart_completer.setup_vars()
-smart_completer.trigger(True)
+# scc.setup_vars()
+scc.trigger(True)
 endpython
 
 return ''
@@ -143,8 +143,8 @@ endfunction
 
 function! SC_Trigger_Secondary()
 exe s:pyeof
-# smart_completer.setup_vars()
-smart_completer.trigger(True, True)
+# scc.setup_vars()
+scc.trigger(True, True)
 endpython
 
 return ''
@@ -152,8 +152,8 @@ endfunction
 
 function! SC_Trigger_Auto()
 exe s:pyeof
-# smart_completer.setup_vars()
-smart_completer.trigger(False)
+# scc.setup_vars()
+scc.trigger(False)
 endpython
 
 return ''
@@ -161,15 +161,17 @@ endfunction
 
 function! SC_OnCursorMovedI()
 
-exe s:pyeof
-# smart_completer.setup_vars()
+if !g:sc_auto_trigger
+  return
+endif
 
-if smart_completer.can_immediately_trigger():
-    # smart_completer.disable_ycm()
-    smart_completer.trigger(False)
+exe s:pyeof
+# scc.setup_vars()
+
+if scc.can_immediately_trigger():
+    scc.trigger(False)
 
 else:
-    # smart_completer.restore_ycm()
     pass
 endpython
 
@@ -178,9 +180,8 @@ endfunction
 function! SC_OnInsertLeave()
 
 exe s:pyeof
-# smart_completer.setup_vars()
+# scc.setup_vars()
 
-# smart_completer.restore_ycm()
 endpython
     
 endfunction
@@ -193,11 +194,11 @@ function! SC_CompleteFunc(findstart, base)
 exe s:pyeof
 
 if int(vim_getvar('g:sc__findstart')) == 1:
-    smart_completer.cf_findstart()
+    scc.cf_findstart()
 
 else:
-    smart_completer.cf_getmatches()
-    smart_completer.reset_complete_func()
+    scc.cf_getmatches()
+    scc.reset_complete_func()
 
 endpython
 
