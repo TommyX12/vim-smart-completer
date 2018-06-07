@@ -68,9 +68,8 @@ endfunction
 function! s:init()
     
     call s:set_default("g:sc_auto_trigger", 1)
-    call s:set_default("g:sc_auto_trigger_space_only", 1)
     call s:set_default("g:sc_pattern_length", 25)
-    call s:set_default("g:sc_max_lines", 500)
+    call s:set_default("g:sc_max_lines", 1000)
     call s:set_default("g:sc_max_results", 12)
     call s:set_default("g:sc_max_result_length", 50)
     " call s:set_default("g:sc_max_downward_search", 10)
@@ -88,8 +87,8 @@ import os
 import vim
 
 script_path = vim.eval('s:script_path')
+sys.path.insert(0, os.path.join(script_path, 'sc', 'secondary_completers')) # this allows local import
 sys.path.insert(0, os.path.join(script_path, 'sc')) # this allows local import
-print(script_path)
 
 endpython
     
@@ -165,7 +164,7 @@ function! SC_OnCursorMovedI()
 exe s:pyeof
 # smart_completer.setup_vars()
 
-if smart_completer.triggered():
+if smart_completer.can_immediately_trigger():
     # smart_completer.disable_ycm()
     smart_completer.trigger(False)
 

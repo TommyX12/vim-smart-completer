@@ -17,7 +17,6 @@ class SmartCompleter:
     
     def setup_vars(self):
         self.auto_trigger            = int(vim_getvar('g:sc_auto_trigger'))
-        self.auto_trigger_space_only = int(vim_getvar('g:sc_auto_trigger_space_only'))
         self.pattern_length          = int(vim_getvar('g:sc_pattern_length'))
         self.max_lines               = int(vim_getvar('g:sc_max_lines'))
         self.max_results             = int(vim_getvar('g:sc_max_results'))
@@ -241,12 +240,12 @@ class SmartCompleter:
         
         vim_setopt('completeopt', completeopt_old)
     
-    def triggered(self):
+    def can_immediately_trigger(self):
         if not self.auto_trigger:
             return False
         
-        if not self.auto_trigger_space_only:
-            return True
+        # TODO no immediate trigger for now.
+        return False
         
         buf = vim.current.buffer
         
